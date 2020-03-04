@@ -1,0 +1,68 @@
+﻿@page "/tierplan"
+@using PlanningSystem.Data
+
+
+@inject POAPP001Context dbContext
+@inherits OwningComponentBase<Poappservice>
+
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<br>
+<br>
+<RadzenTabs>
+    <Tabs>
+        <RadzenTabsItem Text="Planning">
+            <PlanningSystem.Components.SimmulationPlanComponent />
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Credit">
+            <PlanningSystem.Components.CreditComponent />
+            <!--- @await Component.InvokeAsync("Users")-->
+        </RadzenTabsItem>
+        <RadzenTabsItem  Text="SalesTeamLeader" >
+            <PlanningSystem.Components.SalesTeam  />
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Salesman" Visible="@permit">
+            <!--POAPP001.Components.Salesman /-->
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Decision" >
+            <PlanningSystem.Components.Decision />
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+@code {
+
+    string name;
+    bool permit;
+    
+    //RadzenComponent SalesteamLeaderComponent = new RadzenComponent();
+    Dac.UserInfo currentuser;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        name = user.Identity.Name;
+       
+
+        Dac.spdata _spdata = new Dac.spdata();
+        currentuser = new Dac.UserInfo();
+    
+        currentuser = _spdata.GetUserInfo(name);
+
+        
+        if (currentuser.IsTeamManager == 1)
+        {
+            permit = true;
+        }
+        else
+        {
+            permit = false;
+        }
+    }
+
+    
+}
