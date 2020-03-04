@@ -1,0 +1,928 @@
+﻿@using PlanningSystem.Data
+
+
+@inject POAPP001Context dbContext
+@inherits OwningComponentBase<Poappservice>
+@inject ExportService exportservice
+
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="row" style="vertical-align:bottom;">
+    <div class="col-md-6">
+        <h3>Account grouping review </h3>
+    </div>
+    <div class="col-md-6" style="display:flex; justify-content:flex-end;">
+        <RadzenDropDown AllowClear="true" TValue="int" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowFiltering="true" Placeholder="Select..." Data="@dbContext.SalesTeam" TextProperty="SalesTeamId" ValueProperty="TeamId" Change="@(args => Change(args, "DropDown with placeholder"))" Style="margin-bottom: 20px" />
+
+        <div Style="vertical-align:bottom"><RadzenLabel Text="Target Date :"></RadzenLabel>&nbsp;&nbsp;&nbsp;&nbsp;</div>
+        <div>
+            <RadzenDatePicker Disabled="true" @bind-Value="value" Change="@(args => Change(args, "DatePicker", "MM/dd/yyyy"))"></RadzenDatePicker>
+
+        </div>
+    </div>
+    <br />
+    <br />
+
+</div>
+<br>
+
+<div class="row">
+    <div class="col-md-6">
+        <RadzenGrid @ref="grid" AllowFiltering="false" AllowPaging="true" PageSize="1" AllowSorting="false" Data="@plans" Value="@plan" TItem="PlanHead" ColumnWidth="200px" RowExpand="@(args =>  GetDetail(args))">
+            <Template Context="order">
+
+                <RadzenGrid @ref="griddetail" AllowFiltering="false" AllowPaging="true" AllowSorting="false" Data="@plandetails" TItem="PlanDetail">
+                    <Columns>
+                        <RadzenGridColumn TItem="PlanDetail" Property="Factor.Factorname" Title="Factor" Width="100px">
+                            <EditTemplate Context="plandetail">
+                                <RadzenDropDown @bind-Value="planDetail.Factorid" Data="@factors" TextProperty="FactorName" ValueProperty="Factorid" Style="width:100%" />
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="PlanDetail" Context="order" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="70px">
+                        </RadzenGridColumn>
+
+                    </Columns>
+                </RadzenGrid>
+
+            </Template>
+
+            <Columns>
+                <RadzenGridColumn TItem="PlanHead" Property="Planname" Title="Simulation" Width="120px">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="PlanHead" Property="Plandescription" Title="Description" Width="270px">
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+    <div class="col-md-6" style="display:flex; justify-content:flex-end;">
+        <RadzenButton Text="Apply AX" Icon="grid_on" Click="@(args => ApplyAX())" Style="margin-bottom:20px" />
+    </div>
+    </div>
+<br>
+
+<RadzenAccordion>
+    <Items>
+        <RadzenAccordionItem Text="Company" Selected="true">
+            <div class="row">
+                <div class="col-md-4">
+                    Original
+                </div>
+                <div class="col-md-4">
+                    AX
+                </div>
+                <div class="col-md-4">
+                    Final
+                </div>
+
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <RadzenGrid @ref="OriginalStatGrid" AllowFiltering="false" AllowPaging="true" PageSize="5" AllowSorting="false" Data="@Originalstats" Value="@Originalstat" TItem="ConfirmedStat" ColumnWidth="100px">
+
+                        <Columns>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier" Width="35px" TextAlign="TextAlign.Center">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="# of Customer" Width="70px" TextAlign="TextAlign.Center">
+                                <Template Context="Originalstat">
+                                    @String.Format("{0:n0}", Originalstat.CountOfcust)
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer" Width="70px" TextAlign="TextAlign.Center">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="75px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+
+
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+                <div class="col-md-4">
+                    <RadzenGrid AllowFiltering="false" AllowPaging="false" AllowSorting="true" PageSize="5" Data="@AXstattotals" Value="@AXstattotal" TItem="ConfirmedStat" ColumnWidth="100px">
+
+                        <Columns>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier" Width="35px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="# of Customer" Width="70px" TextAlign="TextAlign.Right" Sortable="false">
+                                <Template Context="AXstattotal">
+                                    @String.Format("{0:n0}", AXstattotal.CountOfcust)
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer" Width="70px" TextAlign="TextAlign.Center" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="75px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+                        </Columns>
+                    </RadzenGrid>
+
+                </div>
+
+                <div class="col-md-4">
+                    <RadzenGrid AllowFiltering="false" AllowPaging="true" PageSize="5" AllowSorting="false" Data="@Suggeststats" Value="@Suggeststat" TItem="ConfirmedStat" ColumnWidth="100px">
+
+                        <Columns>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier" Width="35px" TextAlign="TextAlign.Center">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="# of Customer" Width="70px" TextAlign="TextAlign.Center">
+                                <Template Context="Suggeststat">
+                                    @String.Format("{0:n0}", Suggeststat.CountOfcust)
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer" Width="70px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="75px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+
+
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+            </div>
+        </RadzenAccordionItem>
+        <RadzenAccordionItem Text="Team">
+            <div class="row">
+                <div class="col-md-4">
+                    Original
+                </div>
+                <div class="col-md-4">
+                    AX
+                </div>
+                <div class="col-md-4">
+                    Final
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <RadzenGrid @ref="TeamStatGrid" AllowFiltering="false" AllowPaging="true" AllowSorting="true" PageSize="5" Data="@Teamstats" Value="@Teamstat" TItem="ConfirmedStat" ColumnWidth="100px">
+
+                        <Columns>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier" Width="35px" TextAlign="TextAlign.Center" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="# of Customer" Width="70px" TextAlign="TextAlign.Center" Sortable="false">
+                                <Template Context="Teamstat">
+                                    @String.Format("{0:n0}", Teamstat.CountOfcust)
+                                </Template>
+                            </RadzenGridColumn>
+
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer" Width="70px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="75px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+
+
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+                <div class="col-md-4">
+                    <RadzenGrid @ref="TeamSuggestStatGrid" AllowFiltering="false" AllowPaging="true" AllowSorting="false" PageSize="5" Data="@TeamAXstats" Value="@TeamAXstat" TItem="ConfirmedStat" ColumnWidth="100px">
+
+                        <Columns>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier" Width="35px" TextAlign="TextAlign.Center" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="# of Customer" Width="70px" TextAlign="TextAlign.Center" Sortable="false">
+                                <Template Context="TeamAXstats">
+                                    @String.Format("{0:n0}", TeamAXstats.CountOfcust)
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer" Width="70px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="75px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right" Sortable="false">
+                            </RadzenGridColumn>
+
+
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+                <div class="col-md-4">
+                    <RadzenGrid @ref="TeamSuggestStatGrid" AllowFiltering="false" AllowPaging="true" AllowSorting="false" PageSize="5" Data="@TeamSuggeststats" Value="@TeamSuggeststat" TItem="ConfirmedStat" ColumnWidth="100px">
+
+                        <Columns>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier" Width="35px" TextAlign="TextAlign.Center">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="# of Customer" Width="70px" TextAlign="TextAlign.Center">
+                                <Template Context="TeamSuggeststat">
+                                    @String.Format("{0:n0}", TeamSuggeststat.CountOfcust)
+                                </Template>
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer" Width="70px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+
+                            <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                            </RadzenGridColumn>
+
+
+                        </Columns>
+                    </RadzenGrid>
+                </div>
+            </div>
+
+        </RadzenAccordionItem>
+    </Items>
+</RadzenAccordion>
+
+<br />
+<div class="row">
+    <div class="col-md-6" />
+    <div class="col-md-6" />
+
+</div>
+<br />
+<div class="row">
+
+    <div class="col-md-6">
+
+    </div>
+
+    <div class="col-md-3" style="display:flex; justify-content:flex-end;">
+
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end; justify-items:baseline">
+
+        <!--RadzenButton Text="Export Excel" Icon="grid_on" Click="@(args => Export("excel"))" Style="margin-bottom:20px" /-->
+    </div>
+</div>
+<br />
+<div class="row">
+
+    <div class="col-md-3">
+        <RadzenButton Text="Pending" Icon="grid_on" Click="@(args => PendingAccount())" Style="margin-bottom:20px" />
+
+    </div>
+    <div class="col-md-3">
+        <div><h1 style="text-align:center">@(spinning ? spinningtext : " ")</h1></div>
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end;">
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end; justify-items:baseline">
+        <RadzenButton Text="ChangeTier" Icon="grid_on" Click="@(args => ChangeTier())" Style="margin-bottom:20px" />
+        <RadzenButton Text="Export Excel" Icon="grid_on" Click="@(args => Export("excel"))" Style="margin-bottom:20px" />
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+
+        <RadzenGrid @ref="acctgrid" AllowFiltering="true" AllowPaging="true" PageSize="25" AllowSorting="true" Data="@accountResults" Value="@accountResult" TItem="CustAssessResultTable" ColumnWidth="200px" RowUpdate="@OnUpdateRow">
+            <Template Context="accountResult">
+                <RadzenCard Style="width:800px; margin-bottom:30px; height:200px;">
+                    <div>
+                        <div>Customer: <b>@accountResult.CustCode</b> Chain Account Name : @accountResult.ChainName  Credit Score :<b> @accountResult.Reason </b></div>
+                        <br />
+                        <div>AR ratio: @getCredit(accountResult.CustCode).AltArratio.ToString()  &nbsp;&nbsp;&nbsp;&nbsp;   AR ratio point:  @getCredit(accountResult.CustCode).AltarratioPoint.ToString()</div>
+                        <br />
+                        <div>Bounce Count: @getCredit(accountResult.CustCode).BounceCntYear.ToString()  &nbsp;&nbsp;&nbsp;&nbsp;   Bounce Count point:  @getCredit(accountResult.CustCode).BounceCntYearPoint.ToString() </div>
+                        <br />
+                        <div>Return AVG Month:  @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", @getCredit(accountResult.CustCode).ReturnAvgMonth)  &nbsp;&nbsp;&nbsp;&nbsp;   Return AVG point:  @getCredit(accountResult.CustCode).ReturnAvgPoint.ToString() </div>
+                    </div>
+                </RadzenCard>
+            </Template>
+            <Columns>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustCode" Title="" Width="50px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false">
+                    <Template Context="accountResult">
+                        <input type="checkbox" id="SelectedCustcode" name="SelectedCustcode" bind="@CheckBox1Value" @onchange="args => { a(accountResult.CustCode, args.Value); }" />
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesTeamId" Title="Team" Width="50px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Tier" Title="Tier" Width="50px" TextAlign="TextAlign.Center">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SuggestTier" Title="Credit" Width="60px" TextAlign="TextAlign.Center">
+                    <FooterTemplate>
+                        @(Pending ? pendingtext : "Total :")
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesRequestTier" Title="Sales" Width="60px" TextAlign="TextAlign.Center">
+                    <FooterTemplate>
+                        @String.Format("{0:}", accountResults.Count())
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesReason" Title="Reason" Width="150px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Axtier" Title="AX" Width="60px" TextAlign="TextAlign.Center">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="State" Title="ST" Width="40px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="EmpCode" Title="EMP" Width="80px" TextAlign="TextAlign.Right" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="EmpName" Title="Name" Width="100px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustCode" Title="Cust" Width="80px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustName" Title="Cust Name" Width="100px" TextAlign="TextAlign.Left" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Customercategory2" Title="Chain" Width="80px" TextAlign="TextAlign.Center" />
+
+
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Custfirstyear" Title="1st.Year SalesAmt" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="accountResult">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResult.FirstYearSalesAmt)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Custsecondyear" Title="2nd.Year SalesAMT" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="accountResult">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResult.SecondYearSalesAmt)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="UsingAvg" Title="AVG SalesAMT" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="accountResult">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResult.UsingAvg)
+                    </Template>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="FinalTier" Title="Final Tier" Width="80px" TextAlign="TextAlign.Right">
+                    <EditTemplate Context="accountResult">
+                        <RadzenTextBox @bind-Value="accountResult.FinalTier" Style="width:100%; display: block" Name="Suggest Tier" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CountryRegionId" Title="Country" Width="60px" TextAlign="TextAlign.Center" />
+
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+
+
+</div>
+<br />
+<br />
+@if (ShowPopup)
+{
+    <!-- This is the popup to create or edit a forecast -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Change Tier</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="ClosePopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+                    <RadzenDropDown TValue="string" @bind-Value="tiername" Data="@(dbContext.ConfirmedStat)" TextProperty="Tier" ValueProperty="Tier" Style="width:100%" />
+                    <input class="form-control" type="text"
+                           placeholder="Tier Option"
+                           @bind="tiername" hidden="hidden" />
+                    <br />
+                    <div>  Selected Customers' Tiers are goint to be @tiername  </div>
+                    <br />
+                    <!-- Button to save the forecast -->
+                    <button class="btn btn-primary"
+                            @onclick="SaveTier">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+<div class="row">
+
+    <div class="col-md-3">
+
+    </div>
+    <div class="col-md-3">
+
+
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end;">
+
+
+
+
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end; justify-items:baseline">
+        <RadzenButton Text="ChangeTier" Icon="grid_on" Click="@(args => ChangeTier())" Style="margin-bottom:20px" />
+        <RadzenButton Text="Export Excel" Icon="grid_on" Click="@(args => Export("excel"))" Style="margin-bottom:20px" />
+    </div>
+</div>
+
+<br />
+<div class="row">
+    <div class="col-md-12">
+
+        <RadzenGrid @ref="acctsame" AllowFiltering="true" AllowPaging="true" PageSize="30" AllowSorting="true" Data="@accountResultsSame" Value="@accountResultSame" TItem="CustAssessResultTable" ColumnWidth="200px">
+            <Template Context="accountResultSame">
+                <RadzenCard Style="width:800px; margin-bottom:30px; height:200px;">
+                    <div>
+                        <div>Customer: <b>@accountResultSame.CustCode</b> Chain Account Name : @accountResultSame.ChainName  Credit Score :<b> @accountResult.Reason </b></div>
+                        <br />
+                        <div>AR ratio: @getCredit(accountResultSame.CustCode).AltArratio.ToString()  &nbsp;&nbsp;&nbsp;&nbsp;    AR ratio point:  @getCredit(accountResultSame.CustCode).AltarratioPoint.ToString()</div>
+                        <br />
+                        <div>Bounce Count: @getCredit(accountResultSame.CustCode).BounceCntYear.ToString()  &nbsp;&nbsp;&nbsp;&nbsp;   Bounce Count point:  @getCredit(accountResultSame.CustCode).BounceCntYearPoint.ToString() </div>
+                        <br />
+                        <div>Return AVG Month:  @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C}", @getCredit(accountResultSame.CustCode).ReturnAvgMonth)  &nbsp;&nbsp;&nbsp;&nbsp;   Return AVG point:  @getCredit(accountResultSame.CustCode).ReturnAvgPoint.ToString() </div>
+                    </div>
+                </RadzenCard>
+            </Template>
+            <Columns>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustCode" Title="" Width="50px" TextAlign="TextAlign.Center" Sortable="false" Filterable="false">
+                    <Template Context="accountResultSame">
+                        <input type="checkbox" id="SelectedCustcode" name="SelectedCustcode" bind="@CheckBox1Value" @onchange="args => { a(accountResultSame.CustCode, args.Value); }" />
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesTeamId" Title="Team" Width="50px" TextAlign="TextAlign.Center">
+                    <FooterTemplate>
+                        Total:
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Tier" Title="Tier" Width="60px" TextAlign="TextAlign.Center">
+                    <FooterTemplate>
+                        @String.Format("{0:}", accountResultsSame.Count())
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SuggestTier" Title="Credit" Width="60px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesRequestTier" Title="Sales" Width="60px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesReason" Title="Reason" Width="150px" TextAlign="TextAlign.Left" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Axtier" Title="AX" Width="40px" TextAlign="TextAlign.Center">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="State" Title="ST" Width="40px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="EmpCode" Title="EMP" Width="60px" TextAlign="TextAlign.Right" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="EmpName" Title="Name" Width="100px" TextAlign="TextAlign.Center">
+                    <FooterTemplate>
+                        selected: @String.Format("{0:}", custlist.Count())
+                    </FooterTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustCode" Title="Cust" Width="80px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustName" Title="Name" Width="100px" TextAlign="TextAlign.Left" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Customercategory2" Title="Chain" Width="80px" TextAlign="TextAlign.Center" />
+
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Custfirstyear" Title="1st.Year SalesAmt" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="accountResultSame">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResultSame.FirstYearSalesAmt)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Custsecondyear" Title="2nd.Year SalesAMT" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="accountResultSame">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResultSame.SecondYearSalesAmt)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="UsingAvg" Title="AVG SalesAMT" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="accountResultSame">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResultSame.UsingAvg)
+                    </Template>
+                </RadzenGridColumn>
+
+
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="FinalTier" Title="Final Tier" Width="80px" TextAlign="TextAlign.Right">
+                    <EditTemplate Context="accountResultSame">
+                        <RadzenTextBox @bind-Value="accountResultSame.FinalTier" Style="width:100%; display: block" Name="Final Tier" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CountryRegionId" Title="Country" Width="50px" TextAlign="TextAlign.Center" />
+
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+
+
+</div>
+
+
+
+@code {
+
+
+    string name;
+    bool permit;
+
+    string tiername;
+
+
+    DateTime? value = Convert.ToDateTime("2020-01-01");
+
+    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+
+    void Change(DateTime? value, string name, string format)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {value?.ToString(format)}");
+        StateHasChanged();
+    }
+    Dac.UserInfo currentuser;
+
+    //RadzenDropDownDataGrid<Int64> ddgrid;
+    //object simulid;
+
+    RadzenGrid<PlanHead> plansGrid;
+
+    RadzenGrid<ConfirmedStat> OriginalStatGrid;
+    IEnumerable<ConfirmedStat> Originalstats;
+    ConfirmedStat Originalstat;
+
+    RadzenGrid<ConfirmedStat> SuggestStatGrid;
+    IEnumerable<ConfirmedStat> Suggeststats;
+    ConfirmedStat Suggeststat;
+    IEnumerable<ConfirmedStat> Suggeststattotals;
+    ConfirmedStat Suggeststattotal;
+    IEnumerable<ConfirmedStat> AXstattotals;
+    ConfirmedStat AXstattotal;
+    RadzenGrid<ConfirmedStat> TeamStatGrid;
+    IEnumerable<ConfirmedStat> Teamstats;
+    ConfirmedStat Teamstat;
+    IEnumerable<CreditDetail> creditdetails;
+    CreditDetail creditdetail;
+
+    RadzenGrid<ConfirmedStat> TeamSuggestStatGrid;
+    IEnumerable<ConfirmedStat> TeamSuggeststats;
+    ConfirmedStat TeamSuggeststat;
+
+    IEnumerable<ConfirmedStat> TeamAXstats;
+    ConfirmedStat TeamAXstat;
+    //    RadzenGrid<Dac.StatsSummary> statsGrid;
+    //    IEnumerable<Dac.StatsSummary> stats;
+    //    Dac.StatsSummary stat;
+
+    IEnumerable<AccessmentSimulation> simuls;
+    AccessmentSimulation objSimul;
+    AccessmentSimulation SS;
+
+    Factor factor;
+
+    RadzenGrid<PlanHead> grid;
+    IEnumerable<PlanHead> plans;
+    PlanHead plan;
+
+    PlanHead objPlanHead;
+
+
+    PlanDetail planDetail;
+    RadzenGrid<PlanDetail> griddetail;
+    IEnumerable<PlanDetail> plandetails;
+    IEnumerable<Factor> factors;
+
+
+
+    TierPlanDetail tierplandetail;
+    RadzenGrid<TierPlanDetail> gridtierdetail;
+    IEnumerable<TierPlanDetail> tierplandetails;
+
+
+    RadzenGrid<CustAssessResultTable> acctgrid;
+    IEnumerable<CustAssessResultTable> accountResults;
+    CustAssessResultTable accountResult;
+
+    RadzenGrid<CustAssessResultTable> acctsame;
+    IEnumerable<CustAssessResultTable> accountResultsSame;
+    CustAssessResultTable accountResultSame;
+
+    IEnumerable<CustAssessResultTable> accountResulttotals;
+    CustAssessResultTable accountResulttotal;
+
+    long teamid;
+
+
+
+    bool CheckBox1Value;
+    //SalesTeam _SalesTeam;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        name = user.Identity.Name;
+        //name = logusername();
+
+        Dac.spdata _spdata = new Dac.spdata();
+        Dac.UserInfo currentuser = new Dac.UserInfo();
+
+        currentuser = _spdata.GetUserInfo(name);
+
+        //  _SalesTeam = dbContext.SalesTeam;
+        if (currentuser.checkadmin ==1)
+        {
+            teamid = 1;
+        }
+        else
+        {
+            teamid = System.Convert.ToInt64(currentuser.SalesTeamId.Substring(5, 1));
+
+        }
+        //user is belong to sales team
+
+
+        simuls = await Task.FromResult(dbContext.AccessmentSimulation);
+
+        SS = simuls.Where(s => s.Confirmed == 1).FirstOrDefault();
+
+        plans = await Task.FromResult(dbContext.PlanHead.Where(t => t.Planid == SS.Planid));
+        tierplandetails = await Task.FromResult(dbContext.TierPlanDetail.Where(t => t.Tierplanid == SS.Tierplanid));
+
+        /*
+         accountResults --- pending accounts
+         accountResultsSame -- no porblem accounts
+
+         accountResulttotals --for company stats
+
+         */
+
+        accountResulttotals = await Task.FromResult(dbContext.CustAssessResultTable);
+
+
+        accountResults = await Task.FromResult(dbContext.CustAssessResultTable.Where(t => t.FinalTier.Length < 1 && ((t.SuggestTier.Length >= 1 || t.SalesRequestTier.Length >= 1) && t.SalesRequestTier != t.SuggestTier)));
+        accountResultsSame = await Task.FromResult(dbContext.CustAssessResultTable.Except(accountResults).OrderByDescending(t => t.UsingAvg));
+
+        //accountResults = await Task.FromResult(dbContext.CustAssessResultTable.Where(t => t.FinalTier.Length >= 1));
+        //accountResultsSame = await Task.FromResult(dbContext.CustAssessResultTable.Where(t => (t.Tier == t.FinalTier || t.FinalTier == null || t.FinalTier.Length < 1)).OrderByDescending(c => c.UsingAvg));
+        //accountResultsSame = await Task.FromResult(dbContext.CustAssessResultTable.Except(accountResults).OrderByDescending(c => c.UsingAvg));
+
+        Originalstats = await Task.FromResult(dbContext.ConfirmedStat);
+
+
+        creditdetails = await Task.FromResult(dbContext.CreditDetail.Where(t => t.Ruleid == 1));
+        double totalamt = (double)accountResulttotals.Sum(x => x.UsingCustavg);
+        double totalcnt = (double)accountResulttotals.Count();
+
+        Suggeststats = (
+                             from b in accountResulttotals.Where(t => t.FinalTier.Length >= 1)
+                             group b by b.FinalTier into g
+
+                             select new ConfirmedStat
+                             {
+                                 Tier = g.Key,
+                                 Tierid = tierplandetails.Where(x => x.Tiername == g.Key).FirstOrDefault().Tierid,
+                                 CountOfcust = g.Count(),
+                                 SalesAmount = String.Format("{0:C}", g.Sum(b => b.UsingCustavg)),
+                                 CustProp = String.Format("{0:P}", (g.Count() / totalcnt)),
+                                 SalesProp = String.Format("{0:P}", ((double)g.Sum(b => b.UsingCustavg) / totalamt))
+
+                             }
+
+
+                             );
+
+
+
+        Suggeststats = Suggeststats.OrderBy(x => x.Tierid);
+
+        if (totalamt > 0 && totalcnt > 0)
+        {
+            AXstattotals = (
+                             from b in accountResulttotals.Where(t => t.Axtier.Length >= 1)
+                             group b by b.Axtier into g
+
+                             select new ConfirmedStat
+                             {
+                                 Tier = g.Key,
+                                 // Tierid = tierplandetails.Where(x => x.Tiername == g.Key).FirstOrDefault().Tierid,
+                                 CountOfcust = g.Count(),
+                                 SalesAmount = String.Format("{0:C}", g.Sum(b => b.UsingCustavg)),
+                                 CustProp = String.Format("{0:P}", (g.Count() / totalcnt)),
+                                 SalesProp = String.Format("{0:P}", ((double)g.Sum(b => b.UsingCustavg) / totalamt))
+
+                             }
+
+
+                             );
+
+
+
+            //  Suggeststats = Suggeststats.OrderBy(x => x.Tierid);
+        }
+
+
+
+    }
+    public void setSTAT()
+    {
+
+        double teamamt = (double)accountResulttotals.Where(x => x.Tier != "X" && x.SalesTeamId == teamid).Sum(x => x.UsingCustavg);
+        double teamcnt = (double)accountResulttotals.Where(x => x.Tier != "X" && x.SalesTeamId == teamid).Count();
+        if (teamamt > 0 && teamcnt > 0)
+        {
+            Teamstats = (
+                            from b in accountResulttotals.Where(x => x.Tier != "X" && x.SalesTeamId == teamid)
+                            group b by b.Tier into g
+                            select new ConfirmedStat
+                            {
+                                Tier = g.Key,
+                                Tierid = tierplandetails.Where(x => x.Tiername == g.Key).FirstOrDefault().Tierid,
+                                CountOfcust = g.Count(),
+                                SalesAmount = String.Format("{0:C}", g.Sum(b => b.UsingCustavg)),
+                                CustProp = String.Format("{0:P}", (g.Count() / teamcnt)),
+                                SalesProp = String.Format("{0:P}", ((double)g.Sum(b => b.UsingCustavg) / teamamt))
+                            });
+            Teamstats = Teamstats.OrderBy(x => x.Tierid);
+
+            TeamAXstats = (
+                              from b in accountResulttotals.Where(t => t.SalesTeamId == teamid && t.Axtier != null && t.Axtier.Length >= 1)
+                              group b by b.Axtier into g
+                              select new ConfirmedStat
+                              {
+                                  Tier = g.Key,
+                                  //Tierid = tierplandetails.Where(x => x.Tiername == g.Key).FirstOrDefault().Tierid,
+                                  CountOfcust = g.Count(),
+                                  SalesAmount = String.Format("{0:C}", g.Sum(b => b.UsingCustavg)),
+                                  CustProp = String.Format("{0:P}", (g.Count() / teamcnt)),
+                                  SalesProp = String.Format("{0:P}", ((double)g.Sum(b => b.UsingCustavg) / teamamt))
+                              }
+
+              );
+            TeamSuggeststats = (
+                           from b in accountResulttotals.Where(t => t.SalesTeamId == teamid && t.FinalTier.Length >= 1)
+                           group b by b.FinalTier into g
+                           select new ConfirmedStat
+                           {
+                               Tier = g.Key,
+                               Tierid = tierplandetails.Where(x => x.Tiername == g.Key).FirstOrDefault().Tierid,
+                               CountOfcust = g.Count(),
+                               SalesAmount = String.Format("{0:C}", g.Sum(b => b.UsingCustavg)),
+                               CustProp = String.Format("{0:P}", (g.Count() / teamcnt)),
+                               SalesProp = String.Format("{0:P}", ((double)g.Sum(b => b.UsingCustavg) / teamamt))
+                           }
+
+
+
+
+           );
+
+            TeamSuggeststats = TeamSuggeststats.OrderBy(x => x.Tierid);
+        }
+
+
+
+
+    }
+    void Change(bool? value)
+    {
+
+        StateHasChanged();
+    }
+
+
+
+
+
+    //Plan Detail
+
+    async Task GetDetail(PlanHead plan)
+    {
+        plandetails = await @Service.GetPlanDetailAsync(plan.Planid);
+
+    }
+
+
+
+    string spinningtext = "Calculating ......";
+    bool spinning = false;
+    bool Pending = false;
+    string pendingtext = "Pending :";
+
+    void PendingAccount()
+    {
+        if (teamid > 0)
+        {
+            accountResults = accountResults.Where(t => t.SalesTeamId == teamid);
+            StateHasChanged();
+            acctgrid.Reload();
+            Pending = true;
+        }
+
+
+
+
+    }
+
+    void ApplyAX() {
+
+        Dac.spdata s = new Dac.spdata();
+
+        s.ApplyAX((DateTime)value);
+
+
+    }
+
+    void OnUpdateRow(CustAssessResultTable at)
+    {
+        dbContext.Update<CustAssessResultTable>(at);
+        dbContext.SaveChanges();
+        SuggestStatGrid.Reload();
+        TeamSuggestStatGrid.Reload();
+
+    }
+
+    void Change(object value, string name)
+    {
+        //var str = value is IEnumerable<object> ? string.Join(", ", (IEnumerable<object>)value) : value;
+
+        teamid = System.Convert.ToInt64(value);
+        setSTAT();
+        StateHasChanged();
+        //   TeamStatGrid.Reload();
+        //   TeamSuggestStatGrid.Reload();
+
+        accountResults = accountResults.Where(t => t.SalesTeamId == teamid);
+        accountResultsSame = accountResultsSame.Where(t => t.SalesTeamId == teamid).OrderByDescending(t => t.UsingCustavg);
+
+        acctgrid.Reload();
+        acctsame.Reload();
+    }
+
+
+
+    CreditDetail getCredit(string CustCode)
+    {
+        //string AltRatio = "";
+
+        CreditDetail c = creditdetails.Where(c => c.CustCode == CustCode).FirstOrDefault();
+
+        CreditDetail d = new CreditDetail();
+
+        if (c != null)
+        {
+            d.CustCode = c.CustCode;
+            d.Point = c.Point;
+            d.PayTerm = c.PayTerm;
+            d.AltArratio = c.AltArratio;
+            d.AltarratioPoint = c.AltarratioPoint;
+            d.BounceCntYear = c.BounceCntYear;
+            d.BounceCntYearPoint = c.BounceCntYearPoint;
+            d.ReturnAvgMonth = c.ReturnAvgMonth;
+            d.ReturnAvgPoint = c.ReturnAvgPoint;
+
+
+        }
+        return d;
+
+    }
+    void Export(string type)
+    {
+        // exportservice.WriteTSV(accountResults,)
+        // this.acctgrid.Ex
+
+
+        exportservice.Export("Dac.AccountResult", type, new Query() { OrderBy = acctgrid.Query.OrderBy, Filter = acctgrid.Query.Filter });
+    }
+    List<string> custlist = new List<string>();
+
+    bool ShowPopup;
+    void ChangeTier()
+    {
+
+        ShowPopup = true;
+
+    }
+    void ClosePopup()
+    {
+        ShowPopup = false;
+    }
+    void SaveTier()
+    {
+        ShowPopup = false;
+
+        foreach (var cust in custlist)
+        {
+            // acctsame.Data.Where(t => t.CustCode == cust).Select(r => { r.SalesRequestTier = tiername; return r; });
+            CustAssessResultTable c = dbContext.CustAssessResultTable.AsQueryable().Where(t => t.CustCode == cust && t.Resultid == SS.Simulationid).FirstOrDefault();
+
+            c.FinalTier = tiername;
+
+            //accountResultsSame.Where(t => t.CustCode == cust).Select(r => { r.SalesRequestTier = tiername; return r; });
+            //acctsame.UpdateRow();
+
+
+        }
+        dbContext.SaveChanges();
+        custlist.Clear();
+        acctsame.Reset();
+        acctsame.Reload();
+
+
+    }
+
+    void a(string a, object d)
+    {
+
+        string kkk = d.ToString();
+        if (kkk == "True")
+        {
+            if (!custlist.Contains(a))
+            {
+                custlist.Add(a);
+
+            }
+
+        }
+        else
+        {
+            if (custlist.Contains(a))
+            {
+                custlist.Remove(a);
+            }
+
+        }
+
+
+      ;
+    }
+}

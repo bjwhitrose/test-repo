@@ -1,0 +1,1345 @@
+﻿@using PlanningSystem.Data
+
+
+@inject POAPP001Context dbContext
+@inherits OwningComponentBase<Poappservice>
+@inject ExportService exportservice
+
+<div class="row" style="vertical-align:bottom;">
+    <div class="col-md-6">
+        <h3>Account grouping simulation </h3>
+    </div>
+    <div class="col-md-6" style="display:flex; justify-content:flex-end;">
+        <div Style="vertical-align:bottom"><RadzenLabel Text="Target Date :"></RadzenLabel>&nbsp;&nbsp;&nbsp;&nbsp;</div>
+        <div><RadzenDatePicker @bind-Value="value" Change="@(args => Change(args, "DatePicker", "MM/dd/yyyy"))"></RadzenDatePicker></div>
+        
+    </div>
+    <br />
+    <br />
+
+</div>
+<div id="simuldsection" class="row" style="vertical-align:middle;">
+    <div class="col-md-3">
+        <div>
+            <RadzenDropDownDataGrid @ref="ddgrid" TValue="Int64" PageSize="5" AllowClear="true" Data="@simulationlist.Select(c => new { SimulationName = c.SimulationName, Simulationid = c.Simulationid})" TextProperty="SimulationName" ValueProperty="Simulationid" Change="@(args => Change(args))" Placeholder="Select Simulation">
+
+            </RadzenDropDownDataGrid>
+           
+        </div>
+
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end;">
+        <div> <RadzenButton Text="New Simulation" Click="@(args => AddNewSimulation())" /></div>
+
+    </div>
+    <div class="col-md-3">
+        <div></div>
+
+    </div>
+    
+    <br />
+    <br />
+</div>
+
+
+
+
+<div class="row">
+    <div class="col-md-6">
+        <RadzenGrid @ref="grid" AllowFiltering="false" AllowPaging="true" PageSize="1" AllowSorting="false" Data="@plans" Value="@plan" TItem="PlanHead" ColumnWidth="200px" RowExpand="@(args =>  GetDetail(args))" RowSelect="@(args => plan = args)">
+            <Template Context="order">
+
+                <RadzenGrid @ref="griddetail" AllowFiltering="false" AllowPaging="true" PageSize="5" AllowSorting="false" Data="@plandetails" TItem="PlanDetail">
+                    <Columns>
+                        <RadzenGridColumn TItem="PlanDetail" Property="Factorname" Title="Factor" Width="100px">
+                            <EditTemplate Context="plandetail">
+                                <RadzenTextBox @bind-Value="plandetail.Factorname" Style="width:100%; display: block" Name="Factor name" />
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="PlanDetail" Property="Factordescription" Title="Factor Description" Width="300px">
+                            <EditTemplate Context="plandetail">
+                                <RadzenTextBox @bind-Value="plandetail.Factordescription" Style="width:100%; display: block" Name="Factor Description" />
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="PlanDetail" Context="plandetail" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="80px">
+                            <Template Context="plandetail">
+                                <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="@(args => EditRow(plandetail))">
+                                </RadzenButton>
+                            </Template>
+                            <EditTemplate Context="plandetail">
+                                <RadzenButton Icon="save" Size="ButtonSize.Small" Click="@((args) => SaveRow(plandetail))">
+                                </RadzenButton>
+                                <RadzenButton Icon="plandetail" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@((args) => CancelEdit(plandetail))">
+                                </RadzenButton>
+                            </EditTemplate>
+                        </RadzenGridColumn>
+
+                        <RadzenGridColumn TItem="PlanDetail" Context="plandetail" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="70px">
+                            <Template Context="plandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(plandetail))">
+                                </RadzenButton>
+                            </Template>
+                            <EditTemplate Context="plandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(plandetail))">
+                                </RadzenButton>
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="PlanDetail" Context="plandetail" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                            <Template Context="plandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args =>  AddDetailRow(plandetail))">
+                                </RadzenButton>
+                            </Template>
+                            <EditTemplate Context="plandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args => AddDetailRow(plandetail))">
+                                </RadzenButton>
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                    </Columns>
+                </RadzenGrid>
+
+            </Template>
+
+            <Columns>
+                <RadzenGridColumn TItem="PlanHead" Property="Planname" Title="Rule Name" Width="120px">
+                    <EditTemplate Context="plan">
+                        <RadzenTextBox @bind-Value="plan.Planname" Style="width:100%; display: block" Name="Plan Description" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="PlanHead" Property="Plandescription" Title="Rule Description" Width="270px">
+                    <EditTemplate Context="plan">
+                        <RadzenTextBox @bind-Value="plan.Plandescription" Style="width:100%; display: block" Name="Plan Description" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="PlanHead" Context="" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                    <Template Context="plan">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="@(args => EditRow(plan))">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="plan">
+                        <RadzenButton Icon="save" Size="ButtonSize.Small" Click="@((args) => SaveRow(plan))">
+                        </RadzenButton>
+                        <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@((args) => CancelEdit(plan))">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="PlanHead" Context="order" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                    <Template Context="plan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(plan))">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="plan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(plan))">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="PlanHead" Context="order" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                    <Template Context="plan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args =>  AddRow())">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="plan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args => AddRow())">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+
+    <div class="col-md-6">
+        <RadzenGrid @ref="gridtierhead" AllowFiltering="false" AllowPaging="true" PageSize="1" AllowSorting="false" Data="@tierplans" Value="@tierplan" TItem="TierPlanHead" ColumnWidth="200px" RowExpand="@(args =>  GetTierDetail(args))" RowSelect="@(args => tierplan = args)">
+            <Template Context="tierplan">
+
+                <RadzenGrid @ref="gridtierdetail" AllowFiltering="false" AllowPaging="true" AllowSorting="false" Data="@tierplandetails" TItem="TierPlanDetail" Value="@tierplandetail">
+                    <!--RowSelect="@(args =>  EdittierRow(args))" RowUpdate="@OnUpdateTier">-->
+                    <Columns>
+
+                        <RadzenGridColumn TItem="TierPlanDetail" Property="Tiername" Title="Tier Name" Width="100px">
+                            <EditTemplate Context="tierplandetail">
+                                <RadzenTextBox @bind-Value="tierplandetail.Tiername" Style="width:100%; display: block" Name="Tier name" />
+                            </EditTemplate>
+
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="TierPlanDetail" Property="Salesamountrule" Title="Sales Amount above" Width="100px">
+                            <Template Context="tierplandetail">
+                                @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", tierplandetail.Salesamountrule)
+                            </Template>
+                            <EditTemplate Context="tierplandetail">
+                                <RadzenNumeric @bind-Value="tierplandetail.Salesamountrule" Style="width:100%; display: block" Name="SalesAMT" />
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="TierPlanDetail" Property="Tierid" Title="Tier order" Width="100px">
+                            <EditTemplate Context="tierplandetail">
+                                <RadzenNumeric @bind-Value="tierplandetail.Tierid" Style="width:100%; display: block" Name="Tier order" />
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="TierPlanDetail" Context="tierplandetail" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                            <Template Context="tierplandetail">
+                                <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="@(args => EditRow(tierplandetail))">
+                                </RadzenButton>
+                            </Template>
+                            <EditTemplate Context="tierplandetail">
+                                <RadzenButton Icon="save" Size="ButtonSize.Small" Click="@((args) => UpdateRow(tierplandetail))">
+                                </RadzenButton>
+                                <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@((args) => CancelEdit(tierplandetail))">
+                                </RadzenButton>
+                            </EditTemplate>
+                        </RadzenGridColumn>
+
+                        <RadzenGridColumn TItem="TierPlanDetail" Context="tierdetail" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                            <Template Context="tierplandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(tierplandetail))">
+                                </RadzenButton>
+                            </Template>
+                            <EditTemplate Context="tierplandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(tierplandetail))">
+                                </RadzenButton>
+                            </EditTemplate>
+                        </RadzenGridColumn>
+                        <RadzenGridColumn TItem="TierPlanDetail" Context="order" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                            <Template Context="tierplandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args =>  AddtierRow(tierplandetail))">
+                                </RadzenButton>
+                            </Template>
+                            <EditTemplate Context="tierplandetail">
+                                <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args => AddtierRow(tierplandetail))">
+                                </RadzenButton>
+                            </EditTemplate>
+                        </RadzenGridColumn>
+
+                    </Columns>
+                </RadzenGrid>
+
+            </Template>
+
+            <Columns>
+
+                <RadzenGridColumn TItem="TierPlanHead" Property="Tierplanname" Title="Tier Option" Width="100px">
+                    <EditTemplate Context="tierplan">
+                        <RadzenTextBox @bind-Value="tierplan.Tierplanname" Style="width:100%; display: block" Name="Tier plan name" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="TierPlanHead" Property="Tierplandescription" Title="Tier Option description" Width="280px">
+                    <EditTemplate Context="tierplan">
+                        <RadzenTextBox @bind-Value="tierplan.Tierplandescription" Style="width:100%; display: block" Name="Description" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="TierPlanHead" Context="tierplan" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                    <Template Context="tierplan">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="@(args => EditRow(tierplan))">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="tierplan">
+                        <RadzenButton Icon="save" Size="ButtonSize.Small" Click="@((args) => UpdateRow(tierplan))">
+                        </RadzenButton>
+                        <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@((args) => CancelEdit(tierplan))">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="TierPlanHead" Context="tierplan" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                    <Template Context="tierplan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteTierRow(tierplan))">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="tierplan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteTierRow(tierplan))">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="TierPlanHead" Context="tierplan" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="50px">
+                    <Template Context="tierplan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args =>  AddTierRow())">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="tierplan">
+                        <RadzenButton ButtonStyle="ButtonStyle.Light" Icon="input" Size="ButtonSize.Small" Click="@(args => AddTierRow())">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    </div>
+</div>
+<br />
+<div class="row">
+    <div><h1 style="text-align:center">@(spinning ? spinningtext : " ")</h1></div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+
+        Current Stats
+    </div>
+    <div class="col-md-6">
+
+      
+        AX Stats
+    </div>
+</div>
+<br />
+<div class="row">
+    <div class="col-md-6">
+        <RadzenGrid Visible="true" @ref="statsGrid" AllowFiltering="false" AllowPaging="true" PageSize="5" AllowSorting="false" Data="@stats" Value="@stat" TItem="Dac.StatsSummary" ColumnWidth="200px">
+
+            <Columns>
+                <RadzenGridColumn TItem="Dac.StatsSummary" Property="Tier" Title="Tier Name" Width="80px" TextAlign="TextAlign.Center">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Dac.StatsSummary" Property="CustCNT" Title="Number of Customer" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="stat">
+                        @String.Format("{0:n0}", stat.CustCNT)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Dac.StatsSummary" Property="CUSTPROP" Title="% of Customer number" Width="100px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Dac.StatsSummary" Property="SalesAMT" Title="Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Dac.StatsSummary" Property="SALESPROP" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+
+
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+
+    <div class="col-md-6">
+        <RadzenGrid Visible="true" @ref="confirmstatsGrid" AllowFiltering="false" AllowPaging="true" PageSize="5" AllowSorting="false" Data="@confirmstats" Value="@confirmstat" TItem="ConfirmedStat" ColumnWidth="200px">
+
+            <Columns>
+                <RadzenGridColumn TItem="ConfirmedStat" Property="Tier" Title="Tier Name" Width="80px" TextAlign="TextAlign.Center">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="ConfirmedStat" Property="CountOfcust" Title="Number of Customer" Width="100px" TextAlign="TextAlign.Center">
+
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="ConfirmedStat" Property="CustProp" Title="% of Customer number" Width="100px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="ConfirmedStat" Property="SalesAmount" Title="Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="ConfirmedStat" Property="SalesProp" Title="% of Salesamount" Width="80px" TextAlign="TextAlign.Right">
+                </RadzenGridColumn>
+
+
+            </Columns>
+        </RadzenGrid>
+
+    </div>
+
+</div>
+<div class="row">
+
+    <div class="col-md-6">
+
+    </div>
+
+    <div class="col-md-3" style="display:flex; justify-content:flex-end;">
+
+    </div>
+    <div class="col-md-3" style="display:flex; justify-content:flex-end; justify-items:baseline">
+        <RadzenButton Text="Confirm" Icon="grid_on" Click="@(args => ConfrimSimulation())" Style="margin-bottom:20px" />&nbsp;&nbsp;&nbsp;&nbsp;
+        <RadzenButton Text="Export Excel" Icon="grid_on" Click="@(args => Export("excel"))" Style="margin-bottom:20px" />
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+
+        <RadzenGrid @ref="acctgrid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="50" AllowSorting="true" Data="@accountResults" Value="@accountResult" TItem="CustAssessResultTable" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Tier" Title="Tier" Width="70px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Axtier" Title="AX" Width="70px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesTeamId" Title="Team" Width="70px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="State" Title="ST" Width="50px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="EmpCode" Title="EMP" Width="80px" TextAlign="TextAlign.Right" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="EmpName" Title="Name" Width="120px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustCode" Title="Cust code" Width="80px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CustName" Title="Cust Name" Width="200px" TextAlign="TextAlign.Left" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Customercategory2" Title="Chain Accnt" Width="100px" TextAlign="TextAlign.Center" />
+
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="CountryRegionId" Title="Country" Width="50px" TextAlign="TextAlign.Center" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="FirstYearSalesAmt" Title="1st.Year SalesAmt" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="accountResult">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResult.FirstYearSalesAmt)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SecondYearSalesAmt" Title="2nd.Year SalesAMT" Width="100px" TextAlign="TextAlign.Center">
+                    <Template Context="accountResult">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResult.SecondYearSalesAmt)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="UsingAvg" Title="AVG SalesAMT" Width="100px" TextAlign="TextAlign.Right">
+                    <Template Context="accountResult">
+                        @String.Format(new System.Globalization.CultureInfo("en-US"), "{0:C0}", accountResult.UsingAvg)
+                    </Template>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SuggestTier" Title="Suggest Tier" Width="80px" TextAlign="TextAlign.Right" Visible="false" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="Reason" Title="Credit" Width="80px" TextAlign="TextAlign.Right" />
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesRequestTier" Title="SalesRequestTier" Width="100px" TextAlign="TextAlign.Right">
+                    <EditTemplate Context="accountResultSame">
+                        <RadzenTextBox @bind-Value="accountResultSame.SalesRequestTier" Style="width:100%; display: block" Name="SalesRequestTier" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="SalesReason" Title="SalesReason" Width="180px" TextAlign="TextAlign.Center">
+                    <EditTemplate Context="accountResultSame">
+                        <RadzenTextBox @bind-Value="accountResultSame.SalesReason" Style="width:100%; display: block" Name="SalesReason" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="CustAssessResultTable" Property="FinalTier" Title="Final Tier" Width="70px" TextAlign="TextAlign.Right" />
+            </Columns>
+        </RadzenGrid>
+    </div>
+
+
+
+</div>
+
+
+@if (ShowSimulPopup)
+{
+    <!-- This is the popup to create or edit a Simulation -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">New Simulation create</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="CloseSimulPopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+                    <input class="form-control" type="text" placeholder="Simulation Name" @bind="objSimul.SimulationName" hidden="hidden" />
+                    <input class="form-control" type="text" placeholder="Plan Name" @bind="plan.Planid" hidden="hidden" />
+                    <input class="form-control" type="text" placeholder="Plan Name" @bind="tierplan.Tierplanid" hidden="hidden" />
+
+                    <RadzenLabel Text="Using State Rule" Component="Checkbox1" Style="margin-left: 5px;margin-bottom: 20px" Visible="false"></RadzenLabel>
+                    <RadzenCheckBox Visible="false" @bind-Value="@CheckBox1Value" Style="margin-bottom: 5px" TValue="bool" Change="@(args => Change(args))" />
+
+                    <br /><br />
+                    <!-- Button to save the forecast -->
+                    <button class="btn @(spinning?"btn-dark":"btn-primary")" @onclick="SaveSimulPlan">
+                        Create
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowTierPopup)
+{
+    <!-- This is the popup to create or edit a forecast -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">New Tier Option create</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="ShowTierClosePopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+                    <input class="form-control" type="text"
+                           placeholder="Tier Option Name"
+                           @bind="objTierPlanHead.Tierplanname" />
+                    <input class="form-control" type="text"
+                           placeholder="Tier Option description"
+                           @bind="objTierPlanHead.Tierplandescription" />
+                    <input class="form-control" type="number"
+                           placeholder="Tier Count"
+                           @bind="objTierPlanHead.Tiercount" />
+                    <br />
+                    <!-- Button to save the forecast -->
+                    <button class="btn btn-primary"
+                            @onclick="SaveTierPlan">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowPopup)
+{
+    <!-- This is the popup to create or edit a forecast -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">New Plan create</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="ClosePopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+                    <input class="form-control" type="text"
+                           placeholder="Plan Name"
+                           @bind="objPlanHead.Planname" />
+                    <input class="form-control" type="text"
+                           placeholder="Plan description"
+                           @bind="objPlanHead.Plandescription" />
+
+                    <br />
+                    <!-- Button to save the forecast -->
+                    <button class="btn btn-primary"
+                            @onclick="SavePlan">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowDetailPopup)
+{
+    <!-- This is the popup to create or edit a forecast -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">New Detail create</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="CloseDetailPopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+
+                    <input class="form-control" type="text"
+                           placeholder="Factor Name"
+                           @bind="objPlanDetail.PlanHeadid" />
+                    <input class="form-control" type="text"
+                           placeholder="Factor Name"
+                           @bind="objPlanDetail.Factorid" />
+                    <input class="form-control" type="text"
+                           placeholder="Factor Name"
+                           @bind="objPlanDetail.Factorname" />
+                    <input class="form-control" type="text"
+                           placeholder="Factor description"
+                           @bind="objPlanDetail.Factordescription" />
+                    <br />
+                    <!-- Button to save the forecast -->
+                    <button class="btn-primary"
+                            @onclick="SavePlanDetail">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowDetailTierPopup)
+{
+    <!-- This is the popup to create or edit a forecast -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add New Tier</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="CloseDetailTierPopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+
+                    <input class="form-control" type="text"
+                           placeholder="Tier Name"
+                           @bind="tierA.Tiername" />
+                    <input class="form-control" type="number"
+                           placeholder="TIER ORDER"
+                           @bind="tierA.Tierid" />
+                    <input class="form-control" type="text"
+                           placeholder="Salesamountrule"
+                           @bind="tierA.Salesamountrule" />
+                    <input class="form-control" type="text"
+                           placeholder="Tierplanid" hidden="hidden"
+                           @bind="tierA.Tierplanid" />
+                    <br />
+                    <!-- Button to save the forecast -->
+                    <button class="btn btn-primary"
+                            @onclick="SaveTierDetail">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowMessagePopup)
+{
+    <!-- This is the popup to create or edit a Simulation -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Confirmation Warning!</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="CloseMessagePopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+                    You have already confimed simulation for the target date. All previous data (credit score, sales request and final tier) will be deleted, If you confirm the new simulation result. <br />
+                    Do you want to confirm new simulation result? <br />
+                    <input class="form-control" type="text"
+                           placeholder="Simulation Name"
+                           @bind="objSimul.SimulationName" />
+                    <input class="form-control" type="text"
+                           placeholder="Plan Name"
+                           @bind="plan.Planid" hidden="hidden">
+
+                    <input class="form-control" type="text"
+                           placeholder="Tier Option"
+                           @bind="tierplan.Tierplanid" hidden="hidden" />
+
+
+                    <br />
+
+                    <!-- Button to save the forecast -->
+                    <button class="btn @(spinning?"btn-dark":"btn-primary")" @onclick="ConfrimSimulationwithDelete">
+                        Yes
+                    </button>
+                    <button class="btn @(spinning?"btn-dark":"btn-primary")" @onclick="CloseMessagePopup">
+                        No
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+@if (status)
+{
+    <!-- This is the popup to create or edit a Simulation -->
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Warning!</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="CloseAlert">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <!-- Edit form for the current forecast -->
+                <div class="modal-body">
+                    You should choose plan and tier option!
+
+                    <br />
+
+                    <!-- Button to save the forecast -->
+
+                    <button class="btn @(spinning?"btn-dark":"btn-primary")" @onclick="CloseAlert">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    string spinningtext = "Calculating ......";
+    DateTime? value = Convert.ToDateTime("2020-01-01");
+
+    Dictionary<DateTime, string> events = new Dictionary<DateTime, string>();
+
+    void Change(DateTime? value, string name, string format)
+    {
+        events.Add(DateTime.Now, $"{name} value changed to {value?.ToString(format)}");
+        StateHasChanged();
+    }
+
+    string cal;
+    RadzenDropDownDataGrid<Int64> ddgrid;
+    object simulid;
+    //  RadzenGrid<AccessmentSimulation> gridsimul;
+    RadzenGrid<PlanHead> plansGrid;
+
+    RadzenGrid<Dac.StatsSummary> statsGrid;
+    IEnumerable<Dac.StatsSummary> stats;
+    Dac.StatsSummary stat;
+
+    RadzenGrid<ConfirmedStat> confirmstatsGrid;
+    IEnumerable<ConfirmedStat> confirmstats;
+    ConfirmedStat confirmstat;
+
+
+    IEnumerable<AccessmentSimulation> simuls;
+    AccessmentSimulation objSimul;
+
+
+    Factor factor;
+
+    RadzenGrid<PlanHead> grid;
+    IEnumerable<PlanHead> plans;
+    PlanHead plan;
+
+    PlanHead objPlanHead;
+
+
+    PlanDetail planDetail;
+    PlanDetail objPlanDetail;
+    RadzenGrid<PlanDetail> griddetail;
+    IEnumerable<PlanDetail> plandetails;
+    IEnumerable<Factor> factors;
+
+
+    RadzenGrid<TierPlanHead> gridtierhead;
+    IEnumerable<TierPlanHead> tierplans;
+    TierPlanHead tierplan;
+    TierPlanHead objTierPlanHead;
+
+    TierPlanDetail tierplandetail;
+    TierPlanDetail tierA;
+    RadzenGrid<TierPlanDetail> gridtierdetail;
+    IEnumerable<TierPlanDetail> tierplandetails;
+
+    RadzenGrid<CustAssessResultTable> acctgrid;
+    IEnumerable<CustAssessResultTable> accountResults;
+    CustAssessResultTable accountResult;
+
+
+
+
+
+    //   RadzenGrid<AccountList> acctgrid;
+   // IEnumerable<AccountList> arLists;
+   // AccountList arList;
+
+
+    bool ShowPopup = false;
+    bool ShowTierDetail = false;
+    bool ShowTierPopup = false;
+    bool ShowSimulPopup = false;
+    bool ShowDetailPopup = false;
+    bool ShowDetailTierPopup = false;
+    bool CheckBox1Value;
+    bool ShowMessagePopup = false;
+    bool status = false;
+    bool spinning = false;
+
+    IEnumerable<AccessmentSimulation> simulationlist;
+
+    protected override async Task OnInitializedAsync()
+    {
+        plans = await Task.FromResult(dbContext.PlanHead);
+        tierplans = await Task.FromResult(dbContext.TierPlanHead);
+        //        accountResults = await Task.FromResult(dbContext.CustAssessResultTable);
+
+        simulationlist = dbContext.AccessmentSimulation.ToList();
+        simuls = await Task.FromResult(dbContext.AccessmentSimulation);
+
+
+    }
+
+
+    /*async Task refresh()
+    {
+        this.OnInitializedAsync();
+
+
+
+    }*/
+    long simulationid;
+
+    //Simulation
+
+    void Change(object value)
+    {
+
+        StateHasChanged();
+
+
+        if (value.ToString() != "0")
+        {
+            simulationid = System.Convert.ToInt64(value.ToString());
+            long tierid = (long)simuls.Where(t => t.Simulationid == simulationid).Select(t => t.Tierplanid).FirstOrDefault();
+
+            tierplans = dbContext.TierPlanHead.Where(t => t.Tierplanid == tierid);
+            accountResults = dbContext.CustAssessResultTable.Where(t => t.Resultid == simulationid).OrderByDescending(t => t.UsingAvg);
+
+            StateHasChanged();
+
+            gridtierhead.Reload();
+            acctgrid.Reload();
+
+            stats = @Service.GetSummary(System.Convert.ToInt32(simulationid));
+
+
+            stats = (
+                                 from b in stats
+                                 join i in dbContext.TierPlanDetail on b.Tier equals i.Tiername
+                                 where i.Tierplanid == tierplans.First().Tierplanid
+                                 orderby i.Tierid
+                                 select new Dac.StatsSummary
+                                 {
+                                     Tier = b.Tier,
+                                     CustCNT = b.CustCNT,
+                                     CUSTPROP = b.CUSTPROP,
+                                     SalesAMT = b.SalesAMT,
+                                     SALESPROP = b.SALESPROP
+
+                                 });
+
+
+
+
+
+
+
+            double totalamt = (double)accountResults.Sum(x => x.UsingCustavg);
+            double totalcnt = (double)accountResults.Count();
+
+            confirmstats = (
+                                 from b in accountResults.Where(t => t.Axtier.Length >= 1)
+                                 group b by b.Axtier into g
+
+                                 select new ConfirmedStat
+                                 {
+                                     Tier = g.Key,
+                                     CountOfcust = g.Count(),
+                                     SalesAmount = String.Format("{0:C}", g.Sum(b => b.UsingCustavg)),
+                                     CustProp = String.Format("{0:P}", (g.Count() / totalcnt)),
+                                     SalesProp = String.Format("{0:P}", ((double)g.Sum(b => b.UsingCustavg) / totalamt))
+
+                                 }
+                                 );
+
+        }
+        else
+        {
+            tierplans = dbContext.TierPlanHead;
+            gridtierhead.Reload();
+        }
+
+        
+    }
+    void Change(bool? value)
+    {
+
+        StateHasChanged();
+    }
+
+    async void AddNewSimulation()
+    {
+        objSimul = new AccessmentSimulation();
+
+        //plans = await Task.FromResult(dbContext.PlanHead);
+        //tierplans = await Task.FromResult(dbContext.TierPlanHead);
+        if (plan == null || tierplan == null)
+        {
+            status = true;
+        }
+        else
+        {
+
+            simuls = await Task.FromResult(dbContext.AccessmentSimulation);
+            StateHasChanged();
+            ShowSimulPopup = true;
+        }
+
+
+
+
+    }
+    void CloseAlert()
+    {
+        status = false;
+    }
+    void CloseMessagePopup()
+    {
+        ShowMessagePopup = false;
+        StateHasChanged();
+    }
+    void CloseSimulPopup()
+    {
+        // Close the Popup
+        ShowSimulPopup = false;
+        StateHasChanged();
+    }
+
+
+    async Task SaveSimulPlan()
+    {
+        //CONFIRMATION AND SAVE THE PLAN
+        // IF CONFIRM THEN 1
+
+
+
+        ShowSimulPopup = false;
+        AccessmentSimulation objNewSimul = new AccessmentSimulation();
+        objNewSimul.Planid = plan.Planid;
+        objNewSimul.Tierplanid = tierplan.Tierplanid;
+        objNewSimul.SimulationName = objSimul.SimulationName;
+        // objNewSimul.Confirmed = 1;
+        cal = "";
+        if (CheckBox1Value)
+            objNewSimul.StateRule = 1;
+        else
+            objNewSimul.StateRule = 0;
+
+        // Save the result
+        //   var result =
+        //      await @Service.CreateSimulAsync(objNewSimul);
+
+
+        spinning = true;
+        stats = await Task.Run(() => @Service.ExecuteSimulAsync(objNewSimul));
+
+        simuls = await Task.Run(() => Service.GetSimulAsync());
+        spinning = false;
+        await Task.CompletedTask;
+        StateHasChanged();
+        statsGrid.Reload();
+
+    }
+    void GetSimul()
+    {
+
+        StateHasChanged();
+    }
+
+    void ExecuteSimulation()
+    {
+        AccessmentSimulation objNewSimul = new AccessmentSimulation();
+        objNewSimul.Planid = objSimul.Planid;
+        objNewSimul.Tierplanid = objSimul.Tierplanid;
+        objNewSimul.SimulationName = objSimul.SimulationName;
+
+        cal = "";
+        stats = @Service.ExecuteSimulAsync(objNewSimul);
+
+        StateHasChanged();
+        statsGrid.Reload();
+    }
+
+    async void ConfrimSimulationwithDelete()
+    {
+        //         plans = await Task.FromResult(dbContext.PlanHead.Where(t => t.Planid == SS.Planid));
+
+        AccessmentSimulation cc = new AccessmentSimulation();
+
+        cc = simuls.Where(t => t.TargetDate == value && t.Confirmed == 1).FirstOrDefault();
+        // delete previous simulation data
+        // call delete service
+        int i = Service.DeletePreviousSimulation(cc);
+        if (i == 1)
+        {
+            // insert  new simulation data
+            AccessmentSimulation NewSimul = new AccessmentSimulation();
+            NewSimul.Planid = (long)plan.Planid;
+            NewSimul.Tierplanid = (long)tierplan.Tierplanid;
+            NewSimul.SimulationName = objSimul.SimulationName;
+            NewSimul.TargetDate = value;
+            NewSimul.Confirmed = 1;
+
+            dbContext.Update<AccessmentSimulation>(NewSimul);
+            dbContext.SaveChanges();
+
+            IEnumerable<AccessmentSimulation> ksimuls = await Task.FromResult(dbContext.AccessmentSimulation);
+
+            long newsimulationid = ksimuls.Max(row => row.Simulationid);
+
+            int t = @Service.ExecuteSimulAsync(newsimulationid, (long)NewSimul.Planid, (long)NewSimul.Tierplanid, 0);
+
+            if (t == 1)
+            {
+                accountResults = await Task.FromResult(dbContext.CustAssessResultTable.Where(t => t.Resultid == newsimulationid).OrderByDescending(t => t.UsingAvg));
+
+                //                accountResults = Service.GetACCTResult((int)newsimulationid);
+            }
+
+
+            //confirm means to save result table
+
+
+
+            await InvokeAsync(() => { StateHasChanged(); });
+
+            acctgrid.Reload();
+
+        }
+
+        ShowMessagePopup = false;
+        simulationlist = dbContext.AccessmentSimulation.ToList();
+        StateHasChanged();
+
+    }
+
+    async void ConfrimSimulation()
+    {
+        //         plans = await Task.FromResult(dbContext.PlanHead.Where(t => t.Planid == SS.Planid));
+        if (plan == null || tierplan == null || simuls == null)
+        {
+
+        }
+        else
+        {
+            int c = simuls.Where(t => t.TargetDate == value && t.Confirmed == 1).Count();
+
+            if (c > 0)
+            {
+                ShowMessagePopup = true;
+            }
+            else
+            {
+                AccessmentSimulation NewSimul = new AccessmentSimulation();
+                NewSimul.Planid = (long)plan.Planid;
+                NewSimul.Tierplanid = (long)tierplan.Tierplanid;
+                NewSimul.SimulationName = objSimul.SimulationName;
+                NewSimul.TargetDate = value;
+                NewSimul.Confirmed = 1;
+
+                dbContext.Update<AccessmentSimulation>(NewSimul);
+                dbContext.SaveChanges();
+
+                IEnumerable<AccessmentSimulation> ksimuls = await Task.FromResult(dbContext.AccessmentSimulation);
+
+                long newsimulationid = ksimuls.Max(row => row.Simulationid);
+
+                int t = @Service.ExecuteSimulAsync(newsimulationid, (long)NewSimul.Planid, (long)NewSimul.Tierplanid, 0);
+
+                if (t == 1)
+                {
+                    //accountResults = Service.GetACCTResult((int)newsimulationid);
+                    accountResults = await Task.FromResult(dbContext.CustAssessResultTable.Where(t => t.Resultid == newsimulationid).OrderByDescending(t => t.UsingAvg));
+
+                }
+
+
+                //confirm means to save result table
+
+
+                simulationlist = dbContext.AccessmentSimulation.ToList();
+                await InvokeAsync(() => { StateHasChanged(); });
+
+                acctgrid.Reload();
+
+            }
+
+        }
+
+    }
+
+    //Plan Head
+
+    void SaveRow(PlanHead plan)
+    {
+        grid.UpdateRow(plan);
+        dbContext.Update<PlanHead>(plan);
+        dbContext.SaveChanges();
+
+    }
+    void AddRow()
+    {
+        objPlanHead = new PlanHead();
+        ShowPopup = true;
+
+    }
+
+    void ClosePopup()
+    {
+        // Close the Popup
+        ShowPopup = false;
+    }
+
+    void UpdateRow(PlanHead plan)
+    {
+        grid.UpdateRow(plan);
+
+    }
+    void DeleteRow(PlanHead plan)
+    {
+        dbContext.Remove<PlanHead>(plan);
+        dbContext.SaveChanges();
+
+        grid.Reload();
+
+    }
+    void CancelEdit(PlanHead plan)
+    {
+        grid.CancelEditRow(plan);
+        var planEntry = dbContext.Entry(plan);
+        planEntry.CurrentValues.SetValues(planEntry.OriginalValues);
+        planEntry.State = Microsoft.EntityFrameworkCore.EntityState.Unchanged;
+
+    }
+
+    async Task SavePlan()
+    {
+        // Close the Popup
+        ShowPopup = false;
+       
+        PlanHead objNewPlanHead = new PlanHead();
+        objNewPlanHead.Planname = objPlanHead.Planname;
+        objNewPlanHead.Plandescription = objPlanHead.Plandescription;
+        objNewPlanHead.Factorcount = objPlanHead.Factorcount;
+
+        // Save the result
+        var result =
+            @Service.CreatePlanHeadAsync(objNewPlanHead);
+
+        @Service.CreatePlanDetailAsync(objNewPlanHead);
+       
+        plans = await @Service.GetPlanHeadAsync();
+
+    }
+    void EditRow(PlanHead plan)
+    {
+        grid.EditRow(plan);
+
+    }
+
+    //Plan Detail
+    void CloseDetailPopup()
+    {
+        // Close the Popup
+        ShowDetailPopup = false;
+    }
+
+    void DeleteRow(PlanDetail plandetail)
+    {
+        dbContext.Remove<PlanDetail>(plandetail);
+        dbContext.SaveChanges();
+
+        griddetail.Reload();
+
+    }
+    void CancelEdit(PlanDetail plandetail)
+    {
+        griddetail.CancelEditRow(plandetail);
+        var planEntry = dbContext.Entry(plandetail);
+        planEntry.CurrentValues.SetValues(planEntry.OriginalValues);
+        planEntry.State = Microsoft.EntityFrameworkCore.EntityState.Unchanged;
+
+    }
+    async Task GetDetail(PlanHead plan)
+    {
+        plandetails = await @Service.GetPlanDetailAsync(plan.Planid);
+
+    }
+
+   
+
+
+    void EditRow(PlanDetail plandetail)
+    {
+        griddetail.EditRow(plandetail);
+
+    }
+
+    void SaveRow(PlanDetail plandetail)
+    {
+
+    }
+
+
+    async Task SavePlanDetail()
+    {
+        // Close the Popup
+        ShowDetailPopup = false;
+
+        PlanDetail objNewPlanDetail = new PlanDetail();
+        objNewPlanDetail.PlanHeadid = objPlanDetail.PlanHeadid;
+        objNewPlanDetail.Factorname = objPlanDetail.Factorname;
+        objNewPlanDetail.Factordescription = objPlanDetail.Factordescription;
+
+
+        // Save the result
+        var result = await @Service.CreatePlanDetail(objNewPlanDetail);
+        // plans = await @Service.GetPlanHeadAsync();
+
+        griddetail.Reload();
+        grid.Reset();
+    }
+    void AddDetailRow(PlanDetail planDetail)
+    {
+        objPlanDetail = new PlanDetail();
+        objPlanDetail.PlanHeadid = planDetail.PlanHeadid;
+        objPlanDetail.Factorid = planDetail.Factorid + 1;
+        ShowDetailPopup = true;
+
+    }
+
+    // Tier Head
+
+    void AddTierRow()
+    {
+        objTierPlanHead = new TierPlanHead();
+        ShowTierPopup = true;
+
+    }
+
+    void ShowTierClosePopup()
+    {
+        ShowTierPopup = false;
+        StateHasChanged();
+    }
+
+
+    void UpdateRow(TierPlanHead plan)
+    {
+        gridtierhead.UpdateRow(plan);
+
+
+    }
+    void DeleteTierRow(TierPlanHead obj)
+    {
+        dbContext.Remove<TierPlanHead>(obj);
+        dbContext.SaveChanges();
+
+        gridtierhead.Reload();
+
+    }
+    void EditRow(TierPlanHead plan)
+    {
+        gridtierhead.EditRow(plan);
+
+    }
+    void CancelEdit(TierPlanHead plan)
+    {
+        objTierPlanHead = new TierPlanHead();
+        ShowPopup = true;
+
+    }
+
+    async Task SaveTierPlan()
+    {
+        // Close the Popup
+        ShowTierPopup = false;
+
+        TierPlanHead objNewTierPlanHead = new TierPlanHead();
+        objNewTierPlanHead.Tierplanname = objTierPlanHead.Tierplanname;
+        objNewTierPlanHead.Tierplandescription = objTierPlanHead.Tierplandescription;
+        objNewTierPlanHead.Tiercount = objTierPlanHead.Tiercount;
+
+        // Save the result
+        var result =
+            @Service.CreateTierPlanHeadAsync(objNewTierPlanHead);
+
+        @Service.CreateTierPlanDetailAsync(objNewTierPlanHead);
+        tierplans = await @Service.GetTierPlanHeadAsync();
+
+    }
+
+    //Tier Detail
+
+    async Task GetTierDetail(TierPlanHead tierplan)
+    {
+        ShowTierDetail = true;
+        tierplandetails = await @Service.GetTierPlanDetailAsync(tierplan.Tierplanid);
+
+
+
+    }
+
+    void OnUpdateTier(TierPlanDetail tier)
+    {
+        dbContext.Update<TierPlanDetail>(tier);
+        dbContext.SaveChanges();
+    }
+    void EditRow(TierPlanDetail tier)
+    {
+        gridtierdetail.EditRow(tier);
+    }
+
+    void UpdateRow(TierPlanDetail tier)
+    {
+        gridtierdetail.UpdateRow(tier);
+        OnUpdateTier(tier);
+
+    }
+    void AddtierRow(TierPlanDetail tier)
+    {
+
+        tierA = new TierPlanDetail();
+        tierA.Tierplanid = tier.Tierplanid;
+
+
+        ShowDetailTierPopup = true;
+
+    }
+
+    void DeleteRow(TierPlanDetail tier)
+    {
+        if (tier.Tierplanid == dbContext.AccessmentSimulation.Where(t => t.Confirmed == 1 && t.TargetDate == value).FirstOrDefault().Tierplanid)
+        {
+
+        }
+        else
+        {
+            dbContext.Remove<TierPlanDetail>(tier);
+            dbContext.SaveChanges();
+
+            gridtierdetail.Reload();
+            gridtierhead.Reload();
+        }
+
+
+    }
+
+    
+
+    async Task SaveTierDetail()
+    {
+
+        ShowDetailTierPopup = false;
+
+        TierPlanDetail a = new TierPlanDetail();
+        a.Tierplanid = tierA.Tierplanid;
+        a.Tiername = tierA.Tiername;
+        a.Salesamountrule = tierA.Salesamountrule;
+        a.Tierid = tierA.Tierid;
+
+        // Save the result
+        var result =
+            @Service.CreateTierDetailAsync(a);
+
+        tierplandetails = await @Service.GetTierPlanDetailAsync(a.Tierplanid);
+
+    }
+    void CancelEdit(TierPlanDetail tier)
+    {
+        gridtierdetail.CancelEditRow(tier);
+        var tierEntry = dbContext.Entry(tier);
+        tierEntry.CurrentValues.SetValues(tierEntry.OriginalValues);
+        tierEntry.State = Microsoft.EntityFrameworkCore.EntityState.Unchanged;
+
+    }
+    void onupdate()
+    {
+
+    }
+    void CloseDetailTierPopup()
+    {
+        ShowDetailTierPopup = false;
+    }
+
+    void Export(string type)
+    {
+       
+        exportservice.Export("Dac.AccountResult", type, new Query() { OrderBy = acctgrid.Query.OrderBy, Filter = acctgrid.Query.Filter });
+    }
+
+}
